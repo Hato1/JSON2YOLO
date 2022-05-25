@@ -1,6 +1,6 @@
 import json
 
-import cv2
+# import cv2
 import pandas as pd
 from PIL import Image
 
@@ -251,7 +251,7 @@ def convert_ath_json(json_dir):  # dir contains json annotations and images
 
 
 def convert_coco_json(json_dir='../coco/annotations/', use_segments=False, cls91to80=False):
-    save_dir = make_dirs()  # output directory
+    save_dir = make_dirs('output')  # output directory
     coco80 = coco91_to_coco80_class()
 
     # Import json
@@ -266,12 +266,12 @@ def convert_coco_json(json_dir='../coco/annotations/', use_segments=False, cls91
 
         # Write labels file
         for x in tqdm(data['annotations'], desc=f'Annotations {json_file}'):
-            if x['iscrowd']:
+            if x['is_crowd']:
                 continue
 
             img = images['%g' % x['image_id']]
             h, w, f = img['height'], img['width'], img['file_name']
-
+            h, w = w, h  # This line is a hacky fix for conversion from Supahands -J
             # The COCO box format is [top left x, top left y, width, height]
             box = np.array(x['bbox'], dtype=np.float64)
             box[:2] += box[2:] / 2  # xy top-left corner to center
@@ -289,13 +289,15 @@ def convert_coco_json(json_dir='../coco/annotations/', use_segments=False, cls91
                 line = cls, *(s if use_segments else box)  # cls, box or segments
                 with open((fn / f).with_suffix('.txt'), 'a') as file:
                     file.write(('%g ' * len(line)).rstrip() % line + '\n')
+            else:
+                print('Box of width or height less than 0 being excluded')
 
 
 if __name__ == '__main__':
     source = 'COCO'
 
     if source == 'COCO':
-        convert_coco_json('../../Downloads/Objects365')  # directory with *.json
+        convert_coco_json('input')  # directory with *.json
 
     elif source == 'infolks':  # Infolks https://infolks.info/
         convert_infolks_json(name='out',
